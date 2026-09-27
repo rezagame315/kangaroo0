@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>کانگورو رانر</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Tahoma, sans-serif;
+      background: linear-gradient(to bottom, #87ceeb 0%, #dff6ff 60%, #f7d9a7 60%, #e9bf7a 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      direction: rtl;
+    }
+
+    .game-wrap {
+      width: 100%;
+      max-width: 980px;
+      padding: 14px;
+    }
+
+    .top-ui {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: bold;
+      color: #4a2b00;
+      text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+    }
+
+    .score-boxes {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      background: rgba(255,255,255,0.85);
+      border: 2px solid #7a4d14;
+      border-radius: 14px;
+      padding: 8px 14px;
+      font-weight: bold;
+      color: #4a2b00;
+      min-width: 120px;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+    }
+
+    .controls-note {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #5d3a08;
+      background: rgba(255,255,255,0.65);
+      padding: 8px 12px;
+      border-radius: 10px;
+      line-height: 1.8;
+    }
+
+    #gameCanvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      border: 3px solid #7a4d14;
+      border-radius: 18px;
+      background: linear-gradient(to bottom, #8ed6ff 0%, #dff6ff 55%, #f5d08a 55%, #e7bc70 100%);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+      touch-action: manipulation;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      z-index: 10;
+    }
+
+    .hidden { display: none; }
+
+    .panel {
+      width: 100%;
+      max-width: 420px;
+      background: #fff9ef;
+      border: 3px solid #7a4d14;
+      border-radius: 18px;
+      padding: 22px;
+      text-align: center;
+      box-shadow: 0 14px 30px rgba(0,0,0,0.28);
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      color: #5b3200;
+      font-size: 28px;
+    }
+
+    .panel p {
+      color: #6b430d;
+      line-height: 1.9;
+      margin: 10px 0;
+    }
+
+    .btns {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 13px 16px;
+      font-size: 16px;
+      font-family: inherit;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .btn-main {
+      background: #ff9f1c;
+      color: white;
+    }
+
+    .btn-main:hover { background: #f28d00; }
+
+    .btn-ad {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn-ad:hover { background: #0f9f70; }
+
+    .btn-secondary {
+      background: #8b5e34;
+      color: white;
+    }
+
+    .btn-secondary:hover { background: #734b27; }
+
+    .small {
+      font-size: 13px;
+      color: #7a5a2b;
+      margin-top: 8px;
+    }
+
+    .ad-box {
+      font-size: 22px;
+      font-weight: bold;
+      color: #14532d;
+      margin-top: 12px;
+    }
+
+    .warning {
+      color: #b45309;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 600px) {
+      .title { font-size: 18px; }
+      .pill { min-width: 95px; font-size: 14px; }
+      .panel h2 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrap">
+    <div class="top-ui">
+      <div class="title">🦘 کانگورو رانر</div>
+      <div class="score-boxes">
+        <div class="pill">امتیاز: <span id="score">00000</span></div>
+        <div class="pill">رکورد: <span id="best">00000</span></div>
+      </div>
+    </div>
+
+    <canvas id="gameCanvas" width="900" height="260"></canvas>
+
+    <div class="controls-note">
+      کنترل‌ها: پرش با <b>Space</b> یا <b>کلیک</b> یا <b>لمس</b> — خم شدن با <b>ArrowDown</b> — بعد از باخت <b>R</b> برای شروع دوباره
+    </div>
+  </div>
+
+  <!-- شروع -->
+  <div id="startOverlay" class="overlay">
+    <div class="panel">
+      <h2>شروع بازی</h2>
+      <p>مثل بازی معروف دایناسور گوگل، ولی این بار با یک کانگورو!</p>
+      <p>از روی کاکتوس‌ها بپر و رکوردت را بالا ببر.</p>
+      <div class="btns">
+        <button id="startBtn" class="btn-main">شروع بازی</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- باخت -->
+  <div id="gameOverOverlay" class="overlay hidden">
+    <div class="panel">
+      <h2>باختی!</h2>
+      <p>امتیاز این دور: <b id="finalScore">00000</b></p>
+      <p id="adStatusText">می‌توانی با دیدن کلیپ، همین بازی را ادامه بدهی.</p>
+
+      <div class="btns">
+        <button id="watchAdBtn" class="btn-ad">🎬 دیدن کلیپ و ادامه بازی (۳ بار مانده)</button>
+        <button id="restartBtn" class="btn-secondary">🔁 شروع از اول</button>
+      </div>
+
+      <div class="small">در هر دست حداکثر ۳ بار فرصت زنده شدن با کلیپ داری.</div>
+      <div id="adUsedWarning" class="warning hidden">فرصت ۳ بار ادامه با کلیپ برای این دست تمام شده است!</div>
+    </div>
+  </div>
+
+  <!-- شبیه‌ساز تبلیغ -->
+  <div id="adOverlay" class="overlay hidden">
+    <div class="panel">
+      <h2>در حال پخش کلیپ تبلیغاتی</h2>
+      <p>برای بازگشت به بازی، تا پایان زمان صبر کن.</p>
+      <div class="ad-box">⏳ <span id="adTimer">5</span> ثانیه</div>
+      <div class="small">پس از اتمام زمان، بازی از همین‌جا ادامه پیدا می‌کند.</div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const scoreEl = document.getElementById("score");
+    const bestEl = document.getElementById("best");
+    const finalScoreEl = document.getElementById("finalScore");
+
+    const startOverlay = document.getElementById("startOverlay");
+    const gameOverOverlay = document.getElementById("gameOverOverlay");
+    const adOverlay = document.getElementById("adOverlay");
+
+    const startBtn = document.getElementById("startBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const watchAdBtn = document.getElementById("watchAdBtn");
+    const adTimerEl = document.getElementById("adTimer");
+    const adUsedWarning = document.getElementById("adUsedWarning");
+    const adStatusText = document.getElementById("adStatusText");
+
+    const STORAGE_KEY = "kangaroo_runner_best_score_v3";
+
+    const W = canvas.width;
+    const H = canvas.height;
+    const GROUND_Y = 206;
+
+    const GRAVITY = 2500;
+    const JUMP_V = 900;
+    const SPEED_START = 360;
+    const SPEED_GAIN = 10;
+    const SPAWN_MIN = 0.78;
+    const SPAWN_MAX = 1.48;
+
+    const MAX_AD_REVIVES = 3; // حداکثر ۳ بار در هر دست
+
+    let gameRunning = false;
+    let gameOver = false;
+    let paused = false;
+
+    let score = 0;
+    let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+
+    let speed = SPEED_START;
+    let spawnTimer = randRange(SPAWN_MIN, SPAWN_MAX);
+    let lastTime = 0;
+
+    let groundOffset = 0;
+    let clouds = [];
+    let obstacles = [];
+    let particles = [];
+
+    let adRevivesLeft = MAX_AD_REVIVES;
+    let reviveInvincible = 0;
+
+    const kangaroo = {
+      x: 110,
+      y: GROUND_Y,
+      w: 54,
+      h: 58,
+      vy: 0,
+      onGround: true,
+      ducking: false,
+      legTick: 0
+    };
+
+    function pad5(n) {
+      return Math.max(0, Math.min(99999, Math.floor(n))).toString().padStart(5, "0");
+    }
+
+    function updateScoreUI() {
+      scoreEl.textContent = pad5(score);
+      bestEl.textContent = pad5(best);
+    }
+
+    updateScoreUI();
+
+    // ===== صداها =====
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function beep(type) {
+      if (audioCtx.state === "suspended") audioCtx.resume();
+
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === "jump") {
+        osc.type = "square";
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(760, now + 0.08);
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.10);
+        osc.start(now);
+        osc.stop(now + 0.10);
+      } else if (type === "hit") {
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(70, now + 0.35);
+        gain.gain.setValueAtTime(0.09, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      } else if (type === "score") {
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(900, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.06);
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      } else if (type === "revive") {
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(1040, now + 0.18);
+        gain.gain.setValueAtTime(0.07, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      }
+    }
+
+    function randRange(a, b) {
+      return a + Math.random() * (b - a);
+    }
+
+    function rectsOverlap(a, b) {
+      return (
+        a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y
+      );
+    }
+
+    function resetGame() {
+      score = 0;
+      speed = SPEED_START;
+      spawnTimer = randRange(SPAWN_MIN, SPAWN_MAX);
+      groundOffset = 0;
+      obstacles = [];
+      particles = [];
+      reviveInvincible = 0;
+
+      adRevivesLeft = MAX_AD_REVIVES; // شارژ مجدد به ۳ بار
+      adUsedWarning.classList.add("hidden");
+      watchAdBtn.disabled = false;
+      watchAdBtn.style.opacity = "1";
+
+      kangaroo.y = GROUND_Y;
+      kangaroo.vy = 0;
+      kangaroo.onGround = true;
+      kangaroo.ducking = false;
+      kangaroo.legTick = 0;
+
+      clouds = [
+        { x: 180, y: 48, s: 0.9 },
+        { x: 450, y: 70, s: 1.2 },
+        { x: 760, y: 40, s: 1.0 }
+      ];
+
+      gameRunning = true;
+      gameOver = false;
+      paused = false;
+
+      gameOverOverlay.classList.add("hidden");
+      startOverlay.classList.add("hidden");
+
+      updateScoreUI();
+    }
+
+    function jump() {
+      if (!gameRunning || gameOver || paused) return;
+      if (kangaroo.onGround) {
+        kangaroo.vy = -JUMP_V;
+        kangaroo.onGround = false;
+        beep("jump");
+      }
+    }
+
+    function setDuck(state) {
+      if (!gameRunning || gameOver) return;
+      kangaroo.ducking = state && kangaroo.onGround;
+    }
+
+    function spawnObstacle() {
+      const big = Math.random() < 0.45;
+      const w = big ? 30 : 18;
+      const h = big ? 50 : 38;
+
+      obstacles.push({
+        type: "cactus",
+        x: W + 20,
+        y: GROUND_Y - h + 2,
+        w,
+        h
+      });
+    }
+
+    function createHitParticles(x, y) {
+      for (let i = 0; i < 18; i++) {
+        particles.push({
+          x,
+          y,
+          vx: randRange(-180, 180),
+          vy: randRange(-180, 30),
+          life: randRange(0.35, 0.7),
+          maxLife: 0,
+          size: randRange(2, 5),
+          color: i % 2 ? "#8b5a2b" : "#d97706"
+        });
+        particles[particles.length - 1].maxLife = particles[particles.length - 1].life;
+      }
+    }
+
+    function triggerGameOver() {
+      gameRunning = false;
+      gameOver = true;
+
+      if (score > best) {
+        best = score;
+        localStorage.setItem(STORAGE_KEY, String(best));
+      }
+
+      updateScoreUI();
+      finalScoreEl.textContent = pad5(score);
+
+      if (adRevivesLeft > 0) {
+        watchAdBtn.disabled = false;
+        watchAdBtn.style.opacity = "1";
+        watchAdBtn.textContent = `🎬 دیدن کلیپ و ادامه بازی (${adRevivesLeft} بار مانده)`;
+        adUsedWarning.classList.add("hidden");
+        adStatusText.textContent = `می‌توانی کلیپ ببینی و همین بازی را ادامه بدهی (${adRevivesLeft} فرصت باقی مانده).`;
+      } else {
+        watchAdBtn.disabled = true;
+        watchAdBtn.style.opacity = "0.5";
+        watchAdBtn.textContent = "🎬 فرصت کلیپ تمام شد";
+        adUsedWarning.classList.remove("hidden");
+        adStatusText.textContent = "تمام ۳ فرصت ادامه با کلیپ در این دست مصرف شد.";
+      }
+
+      gameOverOverlay.classList.remove("hidden");
+      beep("hit");
+    }
+
+    function reviveAfterAd() {
+      gameOverOverlay.classList.add("hidden");
+      adOverlay.classList.add("hidden");
+
+      gameRunning = true;
+      gameOver = false;
+
+      adRevivesLeft--; // کسر یک فرصت
+      reviveInvincible = 2.0; // ۲ ثانیه مصونیت
+
+      kangaroo.vy = 0;
+      kangaroo.y = GROUND_Y;
+      kangaroo.onGround = true;
+      kangaroo.ducking = false;
+
+      // پاک کردن موانع نزدیک به کانگورو برای پیشگیری از باخت مجدد فوری
+      obstacles = obstacles.filter(o => o.x > kangaroo.x + 150);
+
+      beep("revive");
+    }
+
+    function simulateAdAndContinue() {
+      if (adRevivesLeft <= 0) return;
+
+      gameOverOverlay.classList.add("hidden");
+      adOverlay.classList.remove("hidden");
+
+      let remain = 5;
+      adTimerEl.textContent = remain;
+
+      const timer = setInterval(() => {
+        remain--;
+        adTimerEl.textContent = remain;
+
+        if (remain <= 0) {
+          clearInterval(timer);
+          reviveAfterAd();
+        }
+      }, 1000);
+    }
+
+    function update(dt) {
+      if (!gameRunning || paused) return;
+
+      speed += SPEED_GAIN * dt;
+      groundOffset += speed * dt;
+      kangaroo.legTick += dt * 12;
+
+      if (reviveInvincible > 0) {
+        reviveInvincible -= dt;
+        if (reviveInvincible < 0) reviveInvincible = 0;
+      }
+
+      const oldScore = score;
+      score += dt * 10;
+      score = Math.min(99999, score);
+      if (Math.floor(oldScore / 100) < Math.floor(score / 100)) {
+        beep("score");
+      }
+      updateScoreUI();
+
+      for (const c of clouds) {
+        c.x -= 20 * c.s * dt;
+        if (c.x < -80) {
+          c.x = W + randRange(20, 120);
+          c.y = randRange(25, 80);
+          c.s = randRange(0.8, 1.3);
+        }
+      }
+
+      kangaroo.vy += GRAVITY * dt;
+      kangaroo.y += kangaroo.vy * dt;
+
+      if (kangaroo.y >= GROUND_Y) {
+        kangaroo.y = GROUND_Y;
+        kangaroo.vy = 0;
+        kangaroo.onGround = true;
+      } else {
+        kangaroo.onGround = false;
+      }
+
+      if (!kangaroo.onGround) {
+        kangaroo.ducking = false;
+      }
+
+      spawnTimer -= dt;
+      if (spawnTimer <= 0) {
+        spawnObstacle();
+        const factor = Math.max(0.72, 1 - (speed - SPEED_START) / 1500);
+        spawnTimer = randRange(SPAWN_MIN, SPAWN_MAX) * factor;
+      }
+
+      for (const o of obstacles) {
+        o.x -= speed * dt;
+      }
+      obstacles = obstacles.filter(o => o.x + o.w > -30);
+
+      const body = getKangarooHitbox();
+      for (const o of obstacles) {
+        if (rectsOverlap(body, o)) {
+          if (reviveInvincible <= 0) {
+            createHitParticles(body.x + body.w / 2, body.y + body.h / 2);
+            triggerGameOver();
+            return;
+          }
+        }
+      }
+
+      for (const p of particles) {
+        p.life -= dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 420 * dt;
+      }
+      particles = particles.filter(p => p.life > 0);
+    }
+
+    function getKangarooHitbox() {
+      if (kangaroo.ducking) {
+        return {
+          x: kangaroo.x + 6,
+          y: kangaroo.y - 28,
+          w: 44,
+          h: 28
+        };
+      }
+      return {
+        x: kangaroo.x + 8,
+        y: kangaroo.y - 52,
+        w: 38,
+        h: 52
+      };
+    }
+
+    function drawBackground() {
+      ctx.beginPath();
+      ctx.fillStyle = "#ffd54a";
+      ctx.arc(760, 58, 28, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#d9b06a";
+      ctx.beginPath();
+      ctx.moveTo(0, 180);
+      ctx.lineTo(90, 130);
+      ctx.lineTo(170, 180);
+      ctx.lineTo(260, 120);
+      ctx.lineTo(360, 180);
+      ctx.lineTo(470, 135);
+      ctx.lineTo(580, 180);
+      ctx.lineTo(700, 128);
+      ctx.lineTo(820, 180);
+      ctx.lineTo(900, 180);
+      ctx.lineTo(900, 220);
+      ctx.lineTo(0, 220);
+      ctx.closePath();
+      ctx.fill();
+
+      for (const c of clouds) drawCloud(c.x, c.y, c.s);
+
+      ctx.fillStyle = "#c68642";
+      ctx.fillRect(0, GROUND_Y + 2, W, H - GROUND_Y);
+
+      ctx.strokeStyle = "#7a4d14";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y + 1);
+      ctx.lineTo(W, GROUND_Y + 1);
+      ctx.stroke();
+
+      ctx.strokeStyle = "#9a6a2d";
+      ctx.lineWidth = 2;
+      for (let i = -20; i < W + 40; i += 28) {
+        const x = (i - (groundOffset % 28));
+        ctx.beginPath();
+        ctx.moveTo(x, GROUND_Y + 10 + ((i / 28) % 2) * 2);
+        ctx.lineTo(x + 14, GROUND_Y + 14 + ((i / 28) % 2) * 2);
+        ctx.stroke();
+      }
+    }
+
+    function drawCloud(x, y, s) {
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.beginPath();
+      ctx.arc(x, y, 16 * s, 0, Math.PI * 2);
+      ctx.arc(x + 18 * s, y - 7 * s, 14 * s, 0, Math.PI * 2);
+      ctx.arc(x + 35 * s, y, 16 * s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawKangaroo() {
+      const blink = reviveInvincible > 0 && Math.floor(reviveInvincible * 10) % 2 === 0;
+      if (blink) return;
+
+      const x = kangaroo.x;
+      const y = kangaroo.y;
+      const airborne = !kangaroo.onGround;
+      const ducking = kangaroo.ducking;
+
+      ctx.save();
+
+      if (ducking) {
+        ctx.fillStyle = "#9c5f2c";
+        roundRect(ctx, x + 6, y - 28, 42, 24, 8, true);
+
+        ctx.fillStyle = "#8b5326";
+        roundRect(ctx, x + 34, y - 38, 16, 14, 5, true);
+
+        ctx.fillStyle = "#7a451d";
+        ctx.fillRect(x + 40, y - 46, 3, 8);
+        ctx.fillRect(x + 46, y - 45, 3, 7);
+
+        ctx.strokeStyle = "#7a451d";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x + 8, y - 18);
+        ctx.quadraticCurveTo(x - 8, y - 24, x - 12, y - 8);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#6b3d18";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x + 18, y - 4);
+        ctx.lineTo(x + 16, y + 8);
+        ctx.moveTo(x + 33, y - 4);
+        ctx.lineTo(x + 31, y + 8);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = "#9c5f2c";
+        roundRect(ctx, x + 8, y - 40, 28, 32, 10, true);
+
+        ctx.fillStyle = "#c98952";
+        roundRect(ctx, x + 16, y - 34, 14, 20, 7, true);
+
+        ctx.fillStyle = "#8b5326";
+        roundRect(ctx, x + 28, y - 56, 18, 18, 7, true);
+
+        ctx.fillStyle = "#7a451d";
+        ctx.fillRect(x + 31, y - 68, 4, 12);
+        ctx.fillRect(x + 39, y - 67, 4, 11);
+
+        ctx.fillStyle = "#111";
+        ctx.beginPath();
+        ctx.arc(x + 41, y - 49, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#7a451d";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x + 31, y - 24);
+        ctx.lineTo(x + 42, y - 18);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#7a451d";
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(x + 10, y - 25);
+        if (airborne) {
+          ctx.quadraticCurveTo(x - 8, y - 38, x - 14, y - 16);
+        } else {
+          const t = Math.sin(kangaroo.legTick) * 4;
+          ctx.quadraticCurveTo(x - 6, y - 34 + t, x - 14, y - 12);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = "#6b3d18";
+        ctx.lineWidth = 5;
+        const legA = airborne ? -8 : Math.sin(kangaroo.legTick) * 7;
+        const legB = airborne ? 6 : -Math.sin(kangaroo.legTick) * 7;
+
+        ctx.beginPath();
+        ctx.moveTo(x + 18, y - 8);
+        ctx.lineTo(x + 14, y + 12 + legA);
+        ctx.moveTo(x + 28, y - 8);
+        ctx.lineTo(x + 34, y + 12 + legB);
+        ctx.stroke();
+
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x + 12, y + 12 + legA);
+        ctx.lineTo(x + 20, y + 12 + legA);
+        ctx.moveTo(x + 32, y + 12 + legB);
+        ctx.lineTo(x + 40, y + 12 + legB);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawObstacle(o) {
+      ctx.save();
+      ctx.fillStyle = "#2e8b57";
+      roundRect(ctx, o.x, o.y, o.w, o.h, 5, true);
+
+      if (o.w >= 28) {
+        roundRect(ctx, o.x - 8, o.y + 16, 8, 18, 4, true);
+        roundRect(ctx, o.x + o.w, o.y + 10, 8, 20, 4, true);
+      } else {
+        roundRect(ctx, o.x + o.w - 2, o.y + 12, 6, 14, 4, true);
+      }
+
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = 2;
+      for (let i = 1; i < 3; i++) {
+        const xx = o.x + (o.w / 3) * i;
+        ctx.beginPath();
+        ctx.moveTo(xx, o.y + 4);
+        ctx.lineTo(xx, o.y + o.h - 4);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawParticles() {
+      for (const p of particles) {
+        const alpha = p.life / p.maxLife;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawUIHints() {
+      if (!gameRunning && !gameOver) {
+        ctx.fillStyle = "#5b3200";
+        ctx.font = "bold 20px Tahoma";
+        ctx.textAlign = "center";
+        ctx.fillText("برای شروع، دکمه شروع را بزن", W / 2, 120);
+      }
+
+      if (reviveInvincible > 0 && gameRunning) {
+        ctx.fillStyle = "rgba(16,185,129,0.95)";
+        ctx.font = "bold 18px Tahoma";
+        ctx.textAlign = "left";
+        ctx.fillText("محافظت کوتاه فعال", 20, 32);
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      drawBackground();
+
+      for (const o of obstacles) drawObstacle(o);
+      drawParticles();
+      drawKangaroo();
+      drawUIHints();
+    }
+
+    function loop(ts) {
+      if (!lastTime) lastTime = ts;
+      let dt = (ts - lastTime) / 1000;
+      lastTime = ts;
+      if (dt > 0.1) dt = 0.1;
+
+      update(dt);
+      draw();
+
+      requestAnimationFrame(loop);
+    }
+
+    function roundRect(ctx, x, y, w, h, r, fill) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+      if (fill) ctx.fill();
+    }
+
+    // ===== رویدادها =====
+    startBtn.addEventListener("click", () => {
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      resetGame();
+    });
+
+    restartBtn.addEventListener("click", () => {
+      resetGame();
+    });
+
+    watchAdBtn.addEventListener("click", () => {
+      simulateAdAndContinue();
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (!gameRunning && !gameOver) return;
+        if (gameOver) return;
+        jump();
+      }
+
+      if (e.code === "ArrowDown") {
+        e.preventDefault();
+        setDuck(true);
+      }
+
+      if (e.code === "KeyR") {
+        if (gameOver) resetGame();
+      }
+    });
+
+    window.addEventListener("keyup", (e) => {
+      if (e.code === "ArrowDown") {
+        setDuck(false);
+      }
+    });
+
+    canvas.addEventListener("pointerdown", () => {
+      if (gameRunning && !gameOver) jump();
+    });
+
+    draw();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
